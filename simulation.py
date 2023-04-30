@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class Simulation:
     """Simulates a group of fireflies flashing"""
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         ### MODELING VARIABLES ###
         self.size = config["size"]
         self.num_fireflies = config["num_fireflies"]
@@ -20,17 +20,19 @@ class Simulation:
         self.fig = plt.figure(figsize=(5, 5))
         self.ax = self.fig.add_subplot(111)
 
-    def add_fireflies(self):
-        """Add fireflies"""
+    def add_fireflies(self) -> None:
+        """Add fireflies at randomly"""
         # Initialize position of fireflies
-        self.fireflies[:, 0:2] = np.random.uniform(low=0, high=self.size, size=(self.num_fireflies, 2))
+        self.fireflies[:, 0:2] = np.random.randint(low=0, high=self.size, size=(self.num_fireflies, 2))
 
         # Initialize internal clocks of fireflies
         self.fireflies[:, 2] = np.random.randint(low=0, high=self.num_hours*self.num_minutes-1, size=self.num_fireflies)
 
-    def move_fireflies(self):
+        print(self.fireflies)
+
+    def move_fireflies(self) -> None:
         """Move fireflies in a random direction"""
-        # TODO: Move fireflies in a random direction
+        self.fireflies[:, 0:2] += np.random.choice([-1, 0, 1], size=(self.num_fireflies, 2))
 
     def simulate_timestep(self):
         """Flashing and position"""
