@@ -19,13 +19,14 @@ class Simulation:
 
         plt.ion()
 
-        self.fig = plt.figure(figsize=(5, 5))
-        self.ax = self.fig.add_subplot(111)
+        # Initialize plot
+        self.fig = plt.figure(figsize=(5, 5), facecolor='black')
+        self.ax = self.fig.add_subplot(111, facecolor='black')
 
     def add_fireflies(self) -> None:
         """Add fireflies at random positions with random internal clocks"""
         # Randomly select position of fireflies
-        self.fireflies[:, 0:2] = np.random.randint(low=0, high=self.size, size=(self.num_fireflies, 2))
+        self.fireflies[:, 0:2] = np.random.randint(low=1, high=self.size, size=(self.num_fireflies, 2))
 
         # Randomly start internal clocks of fireflies
         self.fireflies[:, 2] = np.random.randint(low=0, high=self.flashing_index, size=self.num_fireflies)
@@ -37,8 +38,8 @@ class Simulation:
         self.fireflies[:, 0:2] += directions[selected_directions, :] 
         
         # Correct the position of any firefly that moves off grid
-        self.fireflies[:, 0:2][self.fireflies[:, 0:2] < 0] = 0
-        self.fireflies[:, 0:2][self.fireflies[:, 0:2] > self.size] = self.size
+        self.fireflies[:, 0:2][self.fireflies[:, 0:2] < 1] = 1
+        self.fireflies[:, 0:2][self.fireflies[:, 0:2] > self.size-1] = self.size-1
 
     def simulate_timestep(self):
         """Flashing and position"""
@@ -82,14 +83,16 @@ class Simulation:
         # Add fireflies
         self.add_fireflies()
 
+        print(self.fireflies)
+
         # Start FPS counter for initial run
         frame_time_start = time()
 
         while True: 
-            ### FLASHING AND POSITION CALCULATIONS ####
+            ### RUN ####
             self.simulate_timestep()
 
-            ### PLOTTING ###
+            ### PLOT ###
             self.clear_graph()
 
             # Get firefly positions
@@ -97,9 +100,9 @@ class Simulation:
             y = self.fireflies[:, 1]
 
             # Set flashing fireflies to yellow
-            colors = np.full(len(self.fireflies), 'blue')
+            colors = np.full(len(self.fireflies), 'k')
             flashing_firefly_indices = np.where(self.fireflies[:, 3])
-            colors[flashing_firefly_indices] = 'red' # TODO: Make array of colors
+            colors[flashing_firefly_indices] = 'y'
         
             # Plot fireflies
             self.ax.scatter(x, y, s=5, color=colors)
@@ -108,18 +111,18 @@ class Simulation:
             frame_time_end = time()
             fps = 1 / (frame_time_end - frame_time_start)
             text_fps_string = f'FPS: {fps:.1f}'
-            text_fps = self.fig.text(.12, .025, text_fps_string, fontsize=10)
+            text_fps = self.fig.text(.12, .025, text_fps_string, fontsize=10, color='white')
 
             # Show number of fireflies
             text_num_fireflies_string = f'Fireflies: {self.num_fireflies}'
-            text_num_fireflies = self.fig.text(.4, .025, text_num_fireflies_string, fontsize=10)
+            text_num_fireflies = self.fig.text(.4, .025, text_num_fireflies_string, fontsize=10, color='white')
 
             # Show number of flashing fireflies
             num_flashing = np.count_nonzero(self.fireflies[:, 3])
             text_num_flashing_string = f'Flashing: {num_flashing}'
-            text_num_flashing = self.fig.text(.68, .025, text_num_flashing_string, fontsize=10)
+            text_num_flashing = self.fig.text(.68, .025, text_num_flashing_string, fontsize=10, color='white')
 
-            # DRaw on canvas
+            # Draw on canvas
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
