@@ -3,7 +3,7 @@ from simulation import Simulation
 # Define simulation parameters
 config = {
     "size": 50, 
-    "num_fireflies": 100,
+    "num_fireflies": 10,
     "num_hours": 9,
     "num_minutes": 3
 }

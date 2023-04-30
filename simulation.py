@@ -5,13 +5,11 @@ import matplotlib.pyplot as plt
 class Simulation:
     """Simulates a group of fireflies flashing"""
     def __init__(self, config) -> None:
-        ### MODELING VARIABLES ###
         self.size = config["size"]
         self.num_fireflies = config["num_fireflies"]
         self.num_hours = config["num_hours"]
         self.num_minutes = config["num_minutes"]
 
-        ### PLOTTING VARIABLES ### 
         self.frame_count = 0
         self.fireflies = np.zeros((self.num_fireflies, 4))
 
@@ -21,23 +19,32 @@ class Simulation:
         self.ax = self.fig.add_subplot(111)
 
     def add_fireflies(self) -> None:
-        """Add fireflies at randomly"""
-        # Initialize position of fireflies
+        """Add fireflies at random positions with random internal clocks"""
+        # Randomly select position of fireflies
         self.fireflies[:, 0:2] = np.random.randint(low=0, high=self.size, size=(self.num_fireflies, 2))
 
-        # Initialize internal clocks of fireflies
+        # Randomly start internal clocks of fireflies
         self.fireflies[:, 2] = np.random.randint(low=0, high=self.num_hours*self.num_minutes-1, size=self.num_fireflies)
-
-        print(self.fireflies)
-
+    
     def move_fireflies(self) -> None:
         """Move fireflies in a random direction"""
-        self.fireflies[:, 0:2] += np.random.choice([-1, 0, 1], size=(self.num_fireflies, 2))
+        directions = np.array([[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]])
+        selected_directions = np.random.choice(len(directions), size=self.num_fireflies)        
+        self.fireflies[:, 0:2] += directions[selected_directions, :] 
+        
+        # Correct the position of any firefly that moves off grid
+        self.fireflies[self.fireflies < 0] = 0
+        self.fireflies[self.fireflies > self.size] = self.size
 
     def simulate_timestep(self):
         """Flashing and position"""
-        # TODO: Make flashing and position calculations, call self.move_fireflies()
-        
+        # If there are no fireflies in flashing positions, move all fireflies 1 time unit forewards
+
+        # If there are fireflies flashing, move all fireflies within range the number of sides of the polygon on which they are located.
+        # Fireflies continue flashing until no more fireflies reach their position.
+
+        # Randomly move all fireflies
+        self.move_fireflies()
 
     def clear_graph(self):
         """Clear graph and set limits"""
