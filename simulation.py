@@ -1,6 +1,8 @@
 import numpy as np
-from time import time
 import matplotlib.pyplot as plt
+
+from scipy import spatial as sp
+from time import time
 
 class Simulation:
     """Simulates a group of fireflies flashing"""
@@ -9,7 +11,9 @@ class Simulation:
         self.num_fireflies = config["num_fireflies"]
         self.num_hours = config["num_hours"]
         self.num_minutes = config["num_minutes"]
-
+        self.flashing_index = self.num_hours*self.num_minutes-1
+        self.flashing_threshold = config["flashing_threshold"]
+        
         self.frame_count = 0
         self.fireflies = np.zeros((self.num_fireflies, 4))
 
@@ -24,7 +28,7 @@ class Simulation:
         self.fireflies[:, 0:2] = np.random.randint(low=0, high=self.size, size=(self.num_fireflies, 2))
 
         # Randomly start internal clocks of fireflies
-        self.fireflies[:, 2] = np.random.randint(low=0, high=self.num_hours*self.num_minutes-1, size=self.num_fireflies)
+        self.fireflies[:, 2] = np.random.randint(low=0, high=self.flashing_index, size=self.num_fireflies)
     
     def move_fireflies(self) -> None:
         """Move fireflies in a random direction"""
@@ -33,16 +37,37 @@ class Simulation:
         self.fireflies[:, 0:2] += directions[selected_directions, :] 
         
         # Correct the position of any firefly that moves off grid
-        self.fireflies[self.fireflies < 0] = 0
-        self.fireflies[self.fireflies > self.size] = self.size
+        self.fireflies[:, 0:2][self.fireflies[:, 0:2] < 0] = 0
+        self.fireflies[:, 0:2][self.fireflies[:, 0:2] > self.size] = self.size
 
     def simulate_timestep(self):
         """Flashing and position"""
-        # If there are no fireflies in flashing positions, move all fireflies 1 time unit forewards
+        # Calculate distances between fireflies
+        distances = sp.distance.cdist(self.fireflies[:, 0:2], self.fireflies[:, 0:2])
+    
+        # Create bitmap of nearby flashing fireflies
+        nearby_fireflies = (0 < distances) & (distances <= self.flashing_threshold)
+        nearby_flashing_fireflies = nearby_fireflies*self.fireflies[:,3]
+        
+        # Simplify into 1D array
+        nearby_flashing_fireflies = np.any(nearby_flashing_fireflies == 1, axis=1).astype(int)
 
-        # If there are fireflies flashing, move all fireflies within range the number of sides of the polygon on which they are located.
-        # Fireflies continue flashing until no more fireflies reach their position.
+        # For fireflies that are not near any flashing fireflies, move their internal clock one minute forwards
+        is_not_nearby = nearby_flashing_fireflies == 0
+        self.fireflies[:, 2][is_not_nearby] += 1
+        
+        # For fireflies that are near flashing fireflies and not flashing themselves, move their internal clock according to polygon dynamics 
+        is_nearby_and_not_flashing = (nearby_flashing_fireflies == 1) & (self.fireflies[:, 2] < self.flashing_index)
+        delta = np.floor_divide(self.fireflies[:, 2][is_nearby_and_not_flashing], self.num_minutes)
+        self.fireflies[:, 2][is_nearby_and_not_flashing] += delta
 
+        # Reset clocks that have passed the flashing index
+        self.fireflies[:, 2][self.fireflies[:, 2] > self.flashing_index] -= self.flashing_index + 1
+
+        # Recount which fireflies are flashing
+        self.fireflies[:, 3] = 0
+        self.fireflies[:, 3][self.fireflies[:, 2] == self.flashing_index] = 1
+        
         # Randomly move all fireflies
         self.move_fireflies()
 
@@ -117,8 +142,3 @@ TODO:
         -Adjust the amount by which their clock gets nudge
         -Adjust how close their neighbor must be in order to be nudged
 """
-
-if __name__ == '__main__':
-
-    flashes = simulate_fireflies(num_fireflies=5, n_sides=5, flashing_box_index=4, max_time=100)
-    print(flashes)
