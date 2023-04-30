@@ -1,20 +1,19 @@
-import random
 import numpy as np
-
 from time import time
 import matplotlib.pyplot as plt
 
 class Simulation:
     """Simulates a group of fireflies flashing"""
-    def __init__(self, num_fireflies, num_sides, max_time):
+    def __init__(self, config):
         ### MODELING VARIABLES ###
-        self.num_fireflies = num_fireflies
-        self.num_sides = num_sides
-        self.max_time = max_time
+        self.size = config["size"]
+        self.num_fireflies = config["num_fireflies"]
+        self.num_sides = config["num_sides"]
+        self.max_time = config["max_time"]
 
         ### PLOTTING VARIABLES ### 
         self.frame_count = 0
-        self.fireflies = None # Array with 4 columns: x, y, time, and flashing (0 or 1)
+        self.fireflies = np.zeros((self.num_fireflies, 4))
 
         plt.ion()
 
@@ -22,10 +21,14 @@ class Simulation:
         self.ax = self.fig.add_subplot(111)
 
     def add_fireflies(self):
-        """Add fireflies to self.fireflies"""
-        # TODO: Initialize with random position and random internal clock
-        fireflies = [Firefly(i) for i in range(num_fireflies) if i != flashing_box_index] # Create a list of randomly initialized fireflies
+        """Add fireflies"""
+        # Initialize position of fireflies
+        self.fireflies[:, 0:2] = np.random.uniform(low=0, high=self.size, size=(self.num_fireflies, 2))
+        
+        # Initialize internal clocks of fireflies
+        self.fireflies[:, 2] = np.random.randint(low=0, high=self.num_sides*3, size=self.num_fireflies)
 
+        print(self.fireflies)
 
     def move_fireflies(self):
         """Move fireflies in a random direction"""
