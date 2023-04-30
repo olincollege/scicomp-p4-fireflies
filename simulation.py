@@ -8,8 +8,8 @@ class Simulation:
         ### MODELING VARIABLES ###
         self.size = config["size"]
         self.num_fireflies = config["num_fireflies"]
-        self.num_sides = config["num_sides"]
-        self.max_time = config["max_time"]
+        self.num_hours = config["num_hours"]
+        self.num_minutes = config["num_minutes"]
 
         ### PLOTTING VARIABLES ### 
         self.frame_count = 0
@@ -24,11 +24,9 @@ class Simulation:
         """Add fireflies"""
         # Initialize position of fireflies
         self.fireflies[:, 0:2] = np.random.uniform(low=0, high=self.size, size=(self.num_fireflies, 2))
-        
-        # Initialize internal clocks of fireflies
-        self.fireflies[:, 2] = np.random.randint(low=0, high=self.num_sides*3, size=self.num_fireflies)
 
-        print(self.fireflies)
+        # Initialize internal clocks of fireflies
+        self.fireflies[:, 2] = np.random.randint(low=0, high=self.num_hours*self.num_minutes-1, size=self.num_fireflies)
 
     def move_fireflies(self):
         """Move fireflies in a random direction"""

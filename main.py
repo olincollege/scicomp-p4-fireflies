@@ -3,9 +3,9 @@ from simulation import Simulation
 # Define simulation parameters
 config = {
     "size": 5, 
-    "num_fireflies": 5,
-    "num_sides": 9,
-    "max_time": 100
+    "num_fireflies": 4,
+    "num_hours": 9,
+    "num_minutes": 3
 }
 
 # Create and run simulation
