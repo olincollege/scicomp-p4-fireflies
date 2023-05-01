@@ -3,17 +3,12 @@ import matplotlib.pyplot as plt
 
 from scipy import spatial as sp
 
-"""
-TODO:
--Enable user to toggle between whether nudging neighbors adjusts their internal clock
-"""
-
 class Simulation:
-    """Simulates a group of fireflies flashing"""
+    """Simulate a group of fireflies flashing"""
     def __init__(self, config) -> None:
         self.size = config["size"]
         self.num_fireflies = config["num_fireflies"]
-        self.num_hours = config["num_hours"]
+        self.num_hours = config["num_hours"] 
         self.num_minutes = config["num_minutes"]
         self.flashing_index = self.num_hours*self.num_minutes-1
         self.show_fireflies = config["show_fireflies"]
@@ -48,8 +43,8 @@ class Simulation:
         self.fireflies[:, 0:2][self.fireflies[:, 0:2] < 1] = 1
         self.fireflies[:, 0:2][self.fireflies[:, 0:2] > self.size-1] = self.size-1
 
-    def simulate_timestep(self):
-        """Flashing and position"""
+    def simulate_timestep(self) -> None:
+        """Perform flashing and position calculations"""
         # Record the clock positions of fireflies at the beginning of the timestep
         prev_flashing_fireflies = self.fireflies[:, 3]
 
@@ -64,15 +59,13 @@ class Simulation:
             # Create bitmap of nearby flashing fireflies
             nearby_fireflies = (distances <= self.nudging_threshold)
             nearby_flashing_fireflies = nearby_fireflies*self.fireflies[:,3]
-
-            # Simplify into 1D array
             nearby_flashing_fireflies = np.any(nearby_flashing_fireflies == 1, axis=1).astype(int)
 
             # For fireflies that are not near any flashing fireflies, move their clock one minute forwards
             is_not_nearby = nearby_flashing_fireflies == 0
             self.fireflies[:, 2][is_not_nearby] += 1
             
-            # For fireflies that are near flashing fireflies and not flashing themselves, move their clock according to polygon dynamics 
+            # For fireflies that are near flashing fireflies and not flashing themselves, move their clock according to clock dynamics 
             is_nearby_and_not_flashing = (nearby_flashing_fireflies == 1) & (self.fireflies[:, 2] < self.flashing_index)
             delta = np.floor_divide(self.fireflies[:, 2][is_nearby_and_not_flashing], self.num_minutes)
             self.fireflies[:, 2][is_nearby_and_not_flashing] += delta + 1
@@ -86,14 +79,14 @@ class Simulation:
         else:
             print("No new flashing fireflies")
 
-        # For fireflies that are flashing but do not have any remaining time, move their internal clock one minute forwards.
+        # For fireflies that are flashing but do not have any remaining time, move their clock one minute forwards
         self.fireflies[:, 2][self.fireflies[:, 4] == 0] += 1
         print(self.fireflies[:, 4])
 
         # Reset clocks that have passed the flashing index
         self.fireflies[:, 2][self.fireflies[:, 2] > self.flashing_index] -= self.flashing_index + 1
 
-        # Recount which fireflies are flashing
+        # Record which fireflies are flashing
         self.fireflies[:, 3] = 0
         self.fireflies[:, 3][self.fireflies[:, 2] == self.flashing_index] = 1
         
