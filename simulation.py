@@ -2,7 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy import spatial as sp
-from time import time
+
+"""
+TODO:
+-Enable user to toggle between whether nudging neighbors adjusts their internal clock
+"""
 
 class Simulation:
     """Simulates a group of fireflies flashing"""
@@ -13,9 +17,11 @@ class Simulation:
         self.num_minutes = config["num_minutes"]
         self.flashing_index = self.num_hours*self.num_minutes-1
         self.flashing_threshold = config["flashing_threshold"]
+        self.show_fireflies = config["show_fireflies"]
         
         self.frame_count = 0
-        self.fireflies = np.zeros((self.num_fireflies, 4))
+        self.fireflies = np.zeros((self.num_fireflies, 5)) # x, y, clock_position, is_flashing, time_remaining
+        self.num_max_flashing = 0
 
         plt.ion()
 
@@ -43,24 +49,44 @@ class Simulation:
 
     def simulate_timestep(self):
         """Flashing and position"""
+        # Record the clock positions of fireflies at the beginning of the timestep
+        prev_flashing_fireflies = self.fireflies[:, 3]
+
+        # Decrease the remaining time of all flashing fireflies by one
+        self.fireflies[:, 4][prev_flashing_fireflies == 1] -= 1
+        self.fireflies[:, 4][self.fireflies[:, 4] < 0] = 0
+        
         # Calculate distances between fireflies
         distances = sp.distance.cdist(self.fireflies[:, 0:2], self.fireflies[:, 0:2])
-    
+
         # Create bitmap of nearby flashing fireflies
-        nearby_fireflies = (0 < distances) & (distances <= self.flashing_threshold)
+        nearby_fireflies = (distances <= self.flashing_threshold)
         nearby_flashing_fireflies = nearby_fireflies*self.fireflies[:,3]
-        
+
         # Simplify into 1D array
         nearby_flashing_fireflies = np.any(nearby_flashing_fireflies == 1, axis=1).astype(int)
 
-        # For fireflies that are not near any flashing fireflies, move their internal clock one minute forwards
+        # For fireflies that are not near any flashing fireflies, move their clock one minute forwards
         is_not_nearby = nearby_flashing_fireflies == 0
         self.fireflies[:, 2][is_not_nearby] += 1
         
-        # For fireflies that are near flashing fireflies and not flashing themselves, move their internal clock according to polygon dynamics 
+        # For fireflies that are near flashing fireflies and not flashing themselves, move their clock according to polygon dynamics 
         is_nearby_and_not_flashing = (nearby_flashing_fireflies == 1) & (self.fireflies[:, 2] < self.flashing_index)
         delta = np.floor_divide(self.fireflies[:, 2][is_nearby_and_not_flashing], self.num_minutes)
-        self.fireflies[:, 2][is_nearby_and_not_flashing] += delta
+        self.fireflies[:, 2][is_nearby_and_not_flashing] += delta + 1
+    
+        # If at least one new firely has begun flashing, increase the remaining time of all flashing fireflies by one
+        curr_flashing_fireflies = (self.fireflies[:, 2] == self.flashing_index).astype(int)
+        new_flashing_fireflies = curr_flashing_fireflies - prev_flashing_fireflies
+        if np.any(new_flashing_fireflies == 1):
+            print("At least one firefly is new")
+            self.fireflies[:, 4][curr_flashing_fireflies == 1] += 1
+        else:
+            print("No new flashing fireflies")
+
+        # For fireflies that are flashing but do not have any remaining time, move their internal clock one minute forwards.
+        self.fireflies[:, 2][self.fireflies[:, 4] == 0] += 1
+        print(self.fireflies[:, 4])
 
         # Reset clocks that have passed the flashing index
         self.fireflies[:, 2][self.fireflies[:, 2] > self.flashing_index] -= self.flashing_index + 1
@@ -83,11 +109,6 @@ class Simulation:
         # Add fireflies
         self.add_fireflies()
 
-        print(self.fireflies)
-
-        # Start FPS counter for initial run
-        frame_time_start = time()
-
         while True: 
             ### RUN ####
             self.simulate_timestep()
@@ -100,48 +121,39 @@ class Simulation:
             y = self.fireflies[:, 1]
 
             # Set flashing fireflies to yellow
-            colors = np.full(len(self.fireflies), 'k')
+            if self.show_fireflies: 
+                color = 'gray'
+            else: 
+                color = 'k'
+            colors = np.full(len(self.fireflies), color)
             flashing_firefly_indices = np.where(self.fireflies[:, 3])
             colors[flashing_firefly_indices] = 'y'
         
             # Plot fireflies
             self.ax.scatter(x, y, s=5, color=colors)
-            
-            # Compute and show FPS 
-            frame_time_end = time()
-            fps = 1 / (frame_time_end - frame_time_start)
-            text_fps_string = f'FPS: {fps:.1f}'
-            text_fps = self.fig.text(.12, .025, text_fps_string, fontsize=10, color='white')
 
             # Show number of fireflies
             text_num_fireflies_string = f'Fireflies: {self.num_fireflies}'
-            text_num_fireflies = self.fig.text(.4, .025, text_num_fireflies_string, fontsize=10, color='white')
+            text_num_fireflies = self.fig.text(.12, .025, text_num_fireflies_string, fontsize=10, color='white')
 
             # Show number of flashing fireflies
             num_flashing = np.count_nonzero(self.fireflies[:, 3])
             text_num_flashing_string = f'Flashing: {num_flashing}'
-            text_num_flashing = self.fig.text(.68, .025, text_num_flashing_string, fontsize=10, color='white')
+            text_num_flashing = self.fig.text(.4, .025, text_num_flashing_string, fontsize=10, color='white')
+
+            # Show max number of flashing fireflies
+            if num_flashing > self.num_max_flashing:
+                self.num_max_flashing = num_flashing
+            text_num_max_flashing_string = f'Max Flashing: {self.num_max_flashing}'
+            text_num_max_flashing = self.fig.text(.68, .025, text_num_max_flashing_string, fontsize=10, color='white')
 
             # Draw on canvas
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
-            # Reset fps timer
-            frame_time_start = time()
-
             # Remove old text
-            text_fps.remove()
             text_num_fireflies.remove()
             text_num_flashing.remove()
+            text_num_max_flashing.remove()
 
             self.frame_count += 1
-
-
-"""
-TODO:
--Enable to user to:
-    -Adjust the number of fireflies
-    -Toggle between whether nudging neighbors adjusts their internal clock
-        -Adjust the amount by which their clock gets nudge
-        -Adjust how close their neighbor must be in order to be nudged
-"""
