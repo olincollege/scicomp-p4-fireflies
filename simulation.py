@@ -16,8 +16,9 @@ class Simulation:
         self.num_hours = config["num_hours"]
         self.num_minutes = config["num_minutes"]
         self.flashing_index = self.num_hours*self.num_minutes-1
-        self.flashing_threshold = config["flashing_threshold"]
         self.show_fireflies = config["show_fireflies"]
+        self.enable_nudging = config["enable_nudging"]
+        self.nudging_threshold = config["nudging_threshold"]
         
         self.frame_count = 0
         self.fireflies = np.zeros((self.num_fireflies, 5)) # x, y, clock_position, is_flashing, time_remaining
@@ -56,25 +57,26 @@ class Simulation:
         self.fireflies[:, 4][prev_flashing_fireflies == 1] -= 1
         self.fireflies[:, 4][self.fireflies[:, 4] < 0] = 0
         
-        # Calculate distances between fireflies
-        distances = sp.distance.cdist(self.fireflies[:, 0:2], self.fireflies[:, 0:2])
+        if self.enable_nudging:
+            # Calculate distances between fireflies
+            distances = sp.distance.cdist(self.fireflies[:, 0:2], self.fireflies[:, 0:2])
 
-        # Create bitmap of nearby flashing fireflies
-        nearby_fireflies = (distances <= self.flashing_threshold)
-        nearby_flashing_fireflies = nearby_fireflies*self.fireflies[:,3]
+            # Create bitmap of nearby flashing fireflies
+            nearby_fireflies = (distances <= self.nudging_threshold)
+            nearby_flashing_fireflies = nearby_fireflies*self.fireflies[:,3]
 
-        # Simplify into 1D array
-        nearby_flashing_fireflies = np.any(nearby_flashing_fireflies == 1, axis=1).astype(int)
+            # Simplify into 1D array
+            nearby_flashing_fireflies = np.any(nearby_flashing_fireflies == 1, axis=1).astype(int)
 
-        # For fireflies that are not near any flashing fireflies, move their clock one minute forwards
-        is_not_nearby = nearby_flashing_fireflies == 0
-        self.fireflies[:, 2][is_not_nearby] += 1
+            # For fireflies that are not near any flashing fireflies, move their clock one minute forwards
+            is_not_nearby = nearby_flashing_fireflies == 0
+            self.fireflies[:, 2][is_not_nearby] += 1
+            
+            # For fireflies that are near flashing fireflies and not flashing themselves, move their clock according to polygon dynamics 
+            is_nearby_and_not_flashing = (nearby_flashing_fireflies == 1) & (self.fireflies[:, 2] < self.flashing_index)
+            delta = np.floor_divide(self.fireflies[:, 2][is_nearby_and_not_flashing], self.num_minutes)
+            self.fireflies[:, 2][is_nearby_and_not_flashing] += delta + 1
         
-        # For fireflies that are near flashing fireflies and not flashing themselves, move their clock according to polygon dynamics 
-        is_nearby_and_not_flashing = (nearby_flashing_fireflies == 1) & (self.fireflies[:, 2] < self.flashing_index)
-        delta = np.floor_divide(self.fireflies[:, 2][is_nearby_and_not_flashing], self.num_minutes)
-        self.fireflies[:, 2][is_nearby_and_not_flashing] += delta + 1
-    
         # If at least one new firely has begun flashing, increase the remaining time of all flashing fireflies by one
         curr_flashing_fireflies = (self.fireflies[:, 2] == self.flashing_index).astype(int)
         new_flashing_fireflies = curr_flashing_fireflies - prev_flashing_fireflies
