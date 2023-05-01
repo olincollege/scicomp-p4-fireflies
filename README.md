@@ -3,7 +3,7 @@ Authored by @mmadanguit (Marion Madanguit).
 
 Python script that models the flashing behavior of synchronized fireflies based on the rules of the flash game laid out in [this paper](https://link.springer.com/article/10.1140/epjs/s11734-021-00397-2). 
 
-Code architecture borrowed from [the Colloid Simulation project](https://github.com/jasperkatzban/colloid-sim) authored by @jasperkaztban (Jasper Katzban). 
+Code architecture borrowed from [the Colloid Simulation project](https://github.com/jasperkatzban/colloid-sim) authored by @jasperkatzban (Jasper Katzban). 
 
 ## Setup
 1. Clone the repository.
