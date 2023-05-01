@@ -7,7 +7,7 @@ config = {
     "num_hours": 9,
     "num_minutes": 3,
     "show_fireflies": False,
-    "enable_nudging": False,
+    "enable_nudging": True,
     "nudging_threshold": 1
 }
 
